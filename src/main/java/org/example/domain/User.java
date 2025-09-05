@@ -11,15 +11,16 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(name = "app_user")   // <-- changed table name to avoid reserved keyword
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String userName;   // required for getUserName()
-    private String email;      // required for getEmail()
-    private String password;   // required for getPassword()
+    private String userName;
+    private String email;
+    private String password;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -27,5 +28,5 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
-    private Set<Role> roles;   // required for getRoles() / setRoles()
+    private Set<Role> roles;
 }

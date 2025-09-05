@@ -3,6 +3,8 @@ package org.example.domain;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.Set;
+
 @Entity
 @Getter
 @Setter
@@ -16,5 +18,8 @@ public class Role {
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String name; // required for getName()
+    private String name;
+
+    @ManyToMany(mappedBy = "roles")
+    private Set<User> users;
 }

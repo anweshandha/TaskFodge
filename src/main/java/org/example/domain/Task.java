@@ -26,11 +26,11 @@ public class Task {
     @Enumerated(EnumType.STRING)
     private Priority taskPriority;
 
-    private LocalDateTime createdAt;   // required for setCreatedAt()
-    private LocalDateTime updatedAt;   // required for setUpdatedAt()
-    private LocalDateTime deadline;    // required for getDeadline()
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private LocalDateTime deadline;
 
     @ManyToOne
-    @JoinColumn(name = "assigned_to_id")
-    private User assignedTo;           // required for getAssignedTo()
+    @JoinColumn(name = "assigned_to_id", referencedColumnName = "id")  // <-- reference correct PK
+    private User assignedTo;
 }
