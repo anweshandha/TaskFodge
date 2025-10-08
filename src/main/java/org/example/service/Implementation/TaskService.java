@@ -1,78 +1,71 @@
 package org.example.service.Implementation;
 
-import org.apache.coyote.BadRequestException;
-import org.example.Logging.LogUtils;
 import org.example.domain.Task;
-import org.example.exception.NotFoundException;
+import org.example.domain.TaskStatus;
 import org.example.repository.TaskRepository;
-import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-@Transactional
-public class TaskService extends BaseServiceImpl<Task, Long> {
-    private static final Logger log = LogUtils.getLogger(TaskService.class);
-    private final TaskRepository taskRepository;
+public class TaskService {
 
     @Autowired
-    public TaskService(TaskRepository taskRepository) {
-        this.taskRepository = taskRepository;
+    private TaskRepository taskRepository;
+
+    /**
+     * Save a new task
+     */
+    public Task saveTask(Task task) {
+        return taskRepository.save(task);
     }
 
-    public Task createTask(Task task) throws BadRequestException {
-        log.info("Creating task with title={}", task.getTitle());
-        task.setCreatedAt(LocalDateTime.now());
-        task.setUpdatedAt(LocalDateTime.now());
-        if (task.getDeadline() != null && task.getDeadline().isBefore(task.getCreatedAt())) {
-            throw new BadRequestException("Deadline cannot be before creation date!");
-        }
-        Task saved = taskRepository.save(task);
-        log.info("Task created successfully with id={}", saved.getId());
-        return saved;
+    /**
+     * Get all tasks
+     */
+    public List<Task> getAllTasks() {
+        return taskRepository.findAll();
     }
 
-    public Task getTaskByIdOrThrow(Long id) {
-        log.debug("Fetching task with id={}", id);
-        return findById(id).orElseThrow(() -> new NotFoundException("Task not found!"));
+    /**
+     * Get task by ID
+     */
+    public Task getTaskById(Long id) {
+        return taskRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Task not found"));
     }
 
-    public Task updateTask(Long taskId, Task updatedTask) {
-        log.info("Updating task id={}", taskId);
-        Task task = findById(taskId).orElseThrow(() -> new NotFoundException("Task not found!"));
-        if (updatedTask.getTitle() != null) {
-            task.setTitle(updatedTask.getTitle());
-        }
-        if (updatedTask.getTaskStatus() != null) {
-            task.setTaskStatus(updatedTask.getTaskStatus());
-        }
-        if (updatedTask.getTaskPriority() != null) {
-            task.setTaskPriority(updatedTask.getTaskPriority());
-        }
-        if (updatedTask.getDeadline() != null) {
-            task.setDeadline(updatedTask.getDeadline());
-        }
-        if (updatedTask.getAssignedTo() != null) {
-            task.setAssignedTo(updatedTask.getAssignedTo());
-        }
-
-        task.setUpdatedAt(LocalDateTime.now());
-        Task saved = taskRepository.save(task);
-        log.info("Task updated successfully id={}", saved.getId());
-        return saved;
-    }
-    public List<Task> getTasksWithCloseDeadline() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime next24Hours = now.plusHours(24); // tasks due in next 24h
-        return taskRepository.findByDeadlineBetween(now, next24Hours);
-    }
-    // Delete task
+    /**
+     * Delete task by ID
+     */
     public void deleteTask(Long id) {
-        log.warn("Deleting task id={}", id);
-        taskRepository.deleteById(id);
+        Task task = getTaskById(id);
+        taskRepository.delete(task);
+    }
+
+    /**
+     * Get tasks whose deadline is within the next `minutes`
+     */
+    public List<Task> getTasksWithCloseDeadline(long minutes) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime to = now.plusMinutes(minutes);
+        return taskRepository.findByDeadlineBetween(now, to);
+    }
+
+    /**
+     * No-arg version with default 30 minutes
+     */
+    public List<Task> getTasksWithCloseDeadline() {
+        return getTasksWithCloseDeadline(30L);
+    }
+
+    /**
+     * Optional: get tasks by status with pagination
+     */
+    public List<Task> getTasksByStatus(TaskStatus status, int page, int size) {
+        return taskRepository.findByTaskStatus(status, org.springframework.data.domain.PageRequest.of(page, size))
+                .getContent();
     }
 }

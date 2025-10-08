@@ -1,13 +1,12 @@
 package org.example.dto;
 
-//package org.example.dto;
-
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.http.HttpStatus;
 
 import java.time.Instant;
 import java.util.List;
@@ -22,38 +21,22 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@JsonInclude(JsonInclude.Include.NON_NULL) // ignore null fields in JSON
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ErrorResponse {
 
-    /** Timestamp when the error occurred */
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Instant timestamp;
 
-    /** HTTP status code (e.g., 404) */
     private int status;
-
-    /** Short reason (e.g., "Not Found") */
     private String error;
-
-    /** Human-readable message (developer or user-facing) */
     private String message;
-
-    /** Request path */
     private String path;
-
-    /** Unique trace identifier for debugging */
     private String traceId;
-
-    /** Application or microservice that threw the error */
     private String service;
-
-    /** Validation errors (field-level) */
     private List<FieldError> errors;
-
-    /** Additional metadata (extensible for future needs) */
     private Map<String, Object> metadata;
 
-    // Factory method for quick creation
+    // Factory method for internal HttpStatus-like implementation
     public static ErrorResponse of(HttpStatusLike status, String message, String path) {
         return ErrorResponse.builder()
                 .timestamp(Instant.now())
@@ -62,26 +45,33 @@ public class ErrorResponse {
                 .message(message)
                 .path(path)
                 .traceId(UUID.randomUUID().toString())
-                .service("TaskFodge") // can be injected from config
+                .service("TaskFodge")
                 .build();
     }
 
-    /**
-     * Represents a field-level validation error.
-     */
+    // Overload for using Spring HttpStatus directly
+    public static ErrorResponse of(HttpStatus status, String message, String path) {
+        return ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .status(status.value())
+                .error(status.getReasonPhrase())
+                .message(message)
+                .path(path)
+                .traceId(UUID.randomUUID().toString())
+                .service("TaskFodge")
+                .build();
+    }
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
     public static class FieldError {
-        private String field;         // e.g., "email"
-        private String rejectedValue; // e.g., "not-an-email"
-        private String message;       // e.g., "must be a valid email"
+        private String field;
+        private String rejectedValue;
+        private String message;
     }
 
-    /**
-     * Interface to generalize HttpStatus-like codes (so we can use custom enums too).
-     */
     public interface HttpStatusLike {
         int getCode();
         String getReason();
