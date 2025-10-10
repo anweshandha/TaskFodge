@@ -1,4 +1,4 @@
-package org.example.controller;
+package org.example.dto;
 
 import org.example.domain.Role;
 import org.example.domain.User;
@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -42,6 +43,11 @@ public class AuthController {
             return ResponseEntity.badRequest().body("Email already exists");
         }
 
+        if (userRepository.existsByUserName(user.getUserName())) {
+            return ResponseEntity.badRequest().body("Username already exists");
+        }
+
+        // Encode password
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
         // Default role assignment
@@ -58,21 +64,26 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest req) {
-        // Load user by email or username
-        User user = userRepository.findByEmail(req.getUsername());
-        if (user == null) {
-            user = userRepository.findByUserName(req.getUsername());
+        // Find user by email or username
+        Optional<User> optionalUser = userRepository.findByEmail(req.getUsername());
+        if (optionalUser.isEmpty()) {
+            optionalUser = userRepository.findByUserName(req.getUsername());
         }
-        if (user == null) {
+        if (optionalUser.isEmpty()) {
             return ResponseEntity.status(401).build();
         }
+
+        User user = optionalUser.get(); // unwrap
 
         // Validate password
         if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
             return ResponseEntity.status(401).build();
         }
 
-        var roles = user.getRoles().stream().map(Role::getName).collect(Collectors.toList());
+        var roles = user.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.toList());
+
         String token = jwtUtil.generateToken(
                 user.getEmail() != null ? user.getEmail() : user.getUserName(),
                 roles
@@ -81,4 +92,5 @@ public class AuthController {
         auditService.record("USER_LOGIN", "User logged in: " + user.getEmail());
         return ResponseEntity.ok(new AuthResponse(token, jwtUtil.getExpirationMillis()));
     }
+
 }

@@ -1,17 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <configuration scan="true" scanPeriod="60 seconds">
+    <!-- Allow Spring property resolution -->
+    <springProperty name="LOG_LEVEL" source="logging.level.root" defaultValue="INFO" />
+    <springProperty name="LOG_PATH" source="logging.file.name" defaultValue="logs/taskfodge.log" />
+
+    <!-- Common log pattern -->
     <property name="LOG_PATTERN"
               value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg [traceId=%X{traceId}]%n" />
 
-    <!-- Console Appender -->
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <!-- ===============================
+         CONSOLE APPENDER (Human-readable)
+    ================================ -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>${LOG_PATTERN}</pattern>
         </encoder>
     </appender>
 
-    <!-- File Appender -->
+    <!-- ===============================
+         FILE APPENDER (Rotating text logs)
+    ================================ -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/taskfodge.log</file>
+        <file>${LOG_PATH}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>logs/taskfodge-%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
@@ -21,8 +31,45 @@
         </encoder>
     </appender>
 
-    <root level="INFO">
-        <appender-ref ref="STDOUT"/>
-        <appender-ref ref="FILE"/>
+    <!-- ===============================
+         JSON APPENDER (for ELK/structured logs)
+    ================================ -->
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <fieldName>timestamp</fieldName>
+                </timestamp>
+                <logLevel>
+                    <fieldName>level</fieldName>
+                </logLevel>
+                <threadName>
+                    <fieldName>thread</fieldName>
+                </threadName>
+                <loggerName>
+                    <fieldName>logger</fieldName>
+                </loggerName>
+                <message>
+                    <fieldName>message</fieldName>
+                </message>
+                <mdc>
+                    <fieldName>mdc</fieldName>
+                </mdc>
+                <stackTrace>
+                    <fieldName>stacktrace</fieldName>
+                </stackTrace>
+            </providers>
+        </encoder>
+    </appender>
+
+    <!-- ===============================
+         ROOT LOGGER CONFIGURATION
+    ================================ -->
+    <root level="${LOG_LEVEL}">
+        <!-- Normal console + file logs -->
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+        <!-- Uncomment below if you want JSON logs also printed to console -->
+        <!-- <appender-ref ref="JSON_CONSOLE" /> -->
     </root>
 </configuration>

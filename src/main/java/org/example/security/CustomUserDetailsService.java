@@ -3,8 +3,6 @@ package org.example.security;
 import org.example.domain.Role;
 import org.example.domain.User;
 import org.example.repository.UserRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.*;
@@ -17,10 +15,8 @@ import java.util.stream.Collectors;
  * Loads UserDetails for Spring Security.
  * Supports lookup by username or email.
  */
-@Service
+@Service("customUserDetailsService")
 public class CustomUserDetailsService implements UserDetailsService {
-
-    private static final Logger log = LoggerFactory.getLogger(CustomUserDetailsService.class);
 
     private final UserRepository userRepository;
 
@@ -34,27 +30,21 @@ public class CustomUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("Username or email cannot be empty");
         }
 
-        // Lookup user by username first, then by email
-        User user = userRepository.findByUserName(usernameOrEmail);
-        if (user == null) {
-            user = userRepository.findByEmail(usernameOrEmail);
-        }
-
-        if (user == null) {
-            log.warn("User not found for identifier: {}", usernameOrEmail);
-            throw new UsernameNotFoundException("User not found with identifier: " + usernameOrEmail);
-        }
+        // Lookup by username or email
+        User user = userRepository.findByUserName(usernameOrEmail)
+                .orElse(userRepository.findByEmail(usernameOrEmail)
+                        .orElseThrow(() -> new UsernameNotFoundException(
+                                "User not found with identifier: " + usernameOrEmail)));
 
         // Map roles to Spring Security authorities
-        Set<GrantedAuthority> authorities = user.getRoles() == null ?
-                Set.of() :
+        Set<GrantedAuthority> authorities = user.getRoles() == null ? Set.of() :
                 user.getRoles().stream()
                         .map(Role::getName)
                         .filter(name -> name != null && !name.isBlank())
-                        .map(SimpleGrantedAuthority::new) // Use role names directly
+                        .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toSet());
 
-        // Build UserDetails object
+        // Build UserDetails
         return org.springframework.security.core.userdetails.User.builder()
                 .username(user.getUserName() != null ? user.getUserName() : user.getEmail())
                 .password(user.getPassword()) // BCrypt hashed password

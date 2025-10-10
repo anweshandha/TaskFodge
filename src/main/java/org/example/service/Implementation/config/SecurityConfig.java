@@ -1,8 +1,8 @@
 package org.example.service.Implementation.config;
 
+import org.example.security.CustomUserDetailsService;
 import org.example.security.JwtAuthenticationFilter;
 import org.example.security.JwtUtil;
-import org.example.service.Implementation.CustomUserDetailsService;
 import org.springframework.context.annotation.*;
 import org.springframework.security.authentication.*;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;

@@ -22,7 +22,6 @@ public class UserController {
     @Autowired
     private AuditService auditService;
 
-    /** Create a user */
     @PostMapping
     public ResponseEntity<User> createUser(@RequestBody User user) {
         User saved = userService.createUser(user);
@@ -30,19 +29,16 @@ public class UserController {
         return ResponseEntity.ok(saved);
     }
 
-    /** Get all users */
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
-    /** Get user by ID */
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
-    /** Update user */
     @PutMapping("/{id}")
     @PreAuthorize("principal == #id or hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
@@ -51,7 +47,6 @@ public class UserController {
         return ResponseEntity.ok(updated);
     }
 
-    /** Delete user */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         User user = userService.getUserById(id);
@@ -60,7 +55,6 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    /** Assign roles */
     @PutMapping("/{id}/roles")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<User> assignRoles(@PathVariable Long id, @RequestBody Set<Role> roles) {
@@ -69,7 +63,6 @@ public class UserController {
         return ResponseEntity.ok(updated);
     }
 
-    /** Existence checks */
     @GetMapping("/exists/email/{email}")
     public ResponseEntity<Boolean> isEmailTaken(@PathVariable String email) {
         return ResponseEntity.ok(userService.isEmailTaken(email));
@@ -81,7 +74,7 @@ public class UserController {
     }
 
     @GetMapping("/exists/userId/{userId}")
-    public ResponseEntity<Boolean> isUserIdTaken(@PathVariable String userId) {
+    public ResponseEntity<Boolean> isUserIdTaken(@PathVariable Long userId) {
         return ResponseEntity.ok(userService.isUserIdTaken(userId));
     }
 }

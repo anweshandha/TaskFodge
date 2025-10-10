@@ -2,13 +2,12 @@ package org.example.service.Implementation;
 
 import org.example.domain.Role;
 import org.example.domain.User;
-import org.example.repository.RoleRepository;
 import org.example.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -16,22 +15,20 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private RoleRepository roleRepository;
-
-    /** Create a new user */
+    /** Create a user */
     public User createUser(User user) {
         return userRepository.save(user);
     }
 
     /** Get all users */
-    public java.util.List<User> getAllUsers() {
+    public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
     /** Get user by ID */
     public User getUserById(Long id) {
-        return userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
     }
 
     /** Update user */
@@ -39,24 +36,20 @@ public class UserService {
         User user = getUserById(id);
         user.setUserName(updatedUser.getUserName());
         user.setEmail(updatedUser.getEmail());
-        user.setPassword(updatedUser.getPassword()); // encode externally
+        user.setPassword(updatedUser.getPassword());
+        user.setRoles(updatedUser.getRoles());
         return userRepository.save(user);
     }
 
     /** Delete user */
     public void deleteUser(Long id) {
-        User user = getUserById(id);
-        userRepository.delete(user);
+        userRepository.deleteById(id);
     }
 
-    /** Assign roles dynamically */
+    /** Assign roles to a user */
     public User assignRoles(Long id, Set<Role> roles) {
         User user = getUserById(id);
-        Set<Role> assignedRoles = roles.stream()
-                .map(role -> roleRepository.findByName(role.getName())
-                        .orElseGet(() -> roleRepository.save(Role.builder().name(role.getName()).build())))
-                .collect(Collectors.toSet());
-        user.setRoles(assignedRoles);
+        user.setRoles(roles);
         return userRepository.save(user);
     }
 
@@ -69,7 +62,18 @@ public class UserService {
         return userRepository.existsByUserName(username);
     }
 
-    public boolean isUserIdTaken(String userId) {
-        return userRepository.existsByUserId(userId);
+    public boolean isUserIdTaken(Long userId) {
+        return userRepository.existsById(userId);
+    }
+
+    /** Optional helpers */
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+    }
+
+    public User getUserByUsername(String username) {
+        return userRepository.findByUserName(username)
+                .orElseThrow(() -> new RuntimeException("User not found with username: " + username));
     }
 }

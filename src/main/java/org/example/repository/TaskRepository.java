@@ -5,18 +5,20 @@ import org.example.domain.TaskStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Repository
 public interface TaskRepository extends JpaRepository<Task, Long> {
 
-    // Find tasks whose deadline is within [from, to]
+    // Find tasks with deadline in a given range
     List<Task> findByDeadlineBetween(LocalDateTime from, LocalDateTime to);
 
-    // Paginated listing
+    // Pagination
     Page<Task> findAll(Pageable pageable);
 
-    // Find tasks by status with pagination
+    // Tasks filtered by status with pagination
     Page<Task> findByTaskStatus(TaskStatus taskStatus, Pageable pageable);
 }
